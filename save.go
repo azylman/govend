@@ -146,15 +146,13 @@ func copySrc(dir string, deps []pkgs.Dependency) error {
 			return err
 		}
 		dstpkgroot := filepath.Join(dir, rel)
-		err = os.RemoveAll(dstpkgroot)
-		if err != nil {
+		if err := os.RemoveAll(dstpkgroot); err != nil {
 			log.Println(err)
 			ok = false
 		}
 		w := fs.Walk(dep.Dir)
 		for w.Step() {
-			err = copyPkgFile(dir, srcdir, w)
-			if err != nil {
+			if err := copyPkgFile(dir, srcdir, w); err != nil {
 				log.Println(err)
 				ok = false
 			}
@@ -194,8 +192,7 @@ func copyPkgFile(dstroot, srcroot string, w *fs.Walker) error {
 //   package foo // import "bar/foo"
 //   package foo /* import "bar/foo" */
 func copyFile(dst, src string) error {
-	err := os.MkdirAll(filepath.Dir(dst), 0777)
-	if err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return err
 	}
 
@@ -214,17 +211,13 @@ func copyFile(dst, src string) error {
 	if err != nil {
 		return err
 	}
+	defer w.Close()
 
 	if strings.HasSuffix(dst, ".go") {
 		err = copyWithoutImportComment(w, r)
 	} else {
 		_, err = io.Copy(w, r)
 	}
-	err1 := w.Close()
-	if err == nil {
-		err = err1
-	}
-
 	return err
 }
 
@@ -279,26 +272,10 @@ func stripImportComment(line []byte) []byte {
 	return line
 }
 
-// Func writeVCSIgnore writes "ignore" files inside dir for known VCSs,
-// so that dir/pkg and dir/bin don't accidentally get committed.
-// It logs any errors it encounters.
-func writeVCSIgnore(dir string) {
-	// Currently git is the only VCS for which we know how to do this.
-	// Mercurial and Bazaar have similar mechasims, but they apparently
-	// require writing files outside of dir.
-	const ignore = "/pkg\n/bin\n"
-	name := filepath.Join(dir, ".gitignore")
-	err := writeFile(name, ignore)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 // writeFile is like ioutil.WriteFile but it creates
 // intermediate directories with os.MkdirAll.
 func writeFile(name, body string) error {
-	err := os.MkdirAll(filepath.Dir(name), 0777)
-	if err != nil {
+	if err := os.MkdirAll(filepath.Dir(name), 0777); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(name, []byte(body), 0666)

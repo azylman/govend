@@ -38,8 +38,7 @@ func pkg(name string, pkg ...string) string {
 		Imports []string
 	}{name, pkg}
 	var buf bytes.Buffer
-	err := pkgtpl.Execute(&buf, v)
-	if err != nil {
+	if err := pkgtpl.Execute(&buf, v); err != nil {
 		panic(err)
 	}
 	return buf.String()
@@ -682,17 +681,12 @@ func TestSave(t *testing.T) {
 	}
 
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	const scratch = "deptest"
 	defer os.RemoveAll(scratch)
 	for _, test := range cases {
 		t.Logf("desc: %s", test.desc)
-		err = os.RemoveAll(scratch)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.Nil(t, os.RemoveAll(scratch))
 		altsrc := filepath.Join(scratch, "r2", "src")
 		if test.altstart != nil {
 			makeTree(t, &node{altsrc, "", test.altstart}, "")
@@ -701,21 +695,18 @@ func TestSave(t *testing.T) {
 		makeTree(t, &node{src, "", test.start}, altsrc)
 
 		dir := filepath.Join(wd, src, test.cwd)
-		err = os.Chdir(dir)
-		if err != nil {
+		if err := os.Chdir(dir); err != nil {
 			panic(err)
 		}
 		root1 := filepath.Join(wd, scratch, "r1")
 		root2 := filepath.Join(wd, scratch, "r2")
-		err = os.Setenv("GOPATH", root1+string(os.PathListSeparator)+root2)
-		if err != nil {
+		if err := os.Setenv("GOPATH", root1+string(os.PathListSeparator)+root2); err != nil {
 			panic(err)
 		}
 		if test.werr {
 			assert.NotNil(t, save([]string{}))
 		} else {
-			err := save([]string{})
-			if err != nil {
+			if err := save([]string{}); err != nil {
 				t.Fatalf("got unexpected error %s", err.Error())
 			}
 		}
@@ -726,14 +717,9 @@ func TestSave(t *testing.T) {
 		checkTree(t, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "vendor/Deps.json"))
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Nil(t, err)
 		g := new(Manifest)
-		err = json.NewDecoder(f).Decode(g)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Nil(t, json.NewDecoder(f).Decode(g))
 		f.Close()
 
 		assert.Equal(t, g.ImportPath, test.wdep.ImportPath)
@@ -762,15 +748,9 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			}
 			os.MkdirAll(filepath.Dir(path), 0770)
 			f, err := os.Create(path)
-			if err != nil {
-				t.Errorf("makeTree: %v", err)
-				return
-			}
+			assert.Nil(t, err)
 			defer f.Close()
-			err = json.NewEncoder(f).Encode(g)
-			if err != nil {
-				t.Errorf("makeTree: %v", err)
-			}
+			assert.Nil(t, json.NewEncoder(f).Encode(g))
 		case n.path == "+git":
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
@@ -786,10 +766,7 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			panic("is this gonna be forever")
 		case n.entries == nil:
 			os.MkdirAll(filepath.Dir(path), 0770)
-			err := ioutil.WriteFile(path, []byte(body), 0660)
-			if err != nil {
-				t.Errorf("makeTree: %v", err)
-			}
+			assert.Nil(t, ioutil.WriteFile(path, []byte(body), 0660))
 		default:
 			os.MkdirAll(path, 0770)
 		}
@@ -813,13 +790,8 @@ func checkTree(t *testing.T, want *node) {
 			}
 		case n.entries == nil:
 			gbody, err := ioutil.ReadFile(path)
-			if err != nil {
-				t.Errorf("checkTree: %v", err)
-				return
-			}
-			if got := string(gbody); got != body {
-				t.Errorf("%s = got: %q want: %q", path, got, body)
-			}
+			assert.Nil(t, err)
+			assert.Equal(t, body, string(gbody))
 		default:
 			os.MkdirAll(path, 0770)
 		}
@@ -858,10 +830,7 @@ func TestStripImportComment(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		g := string(stripImportComment([]byte(test.s)))
-		if g != test.w {
-			t.Errorf("stripImportComment(%q) = %q want %q", test.s, g, test.w)
-		}
+		assert.Equal(t, string(stripImportComment([]byte(test.s))), test.w)
 	}
 }
 
@@ -875,8 +844,5 @@ func TestCopyWithoutImportCommentLongLines(t *testing.T) {
 
 	o := new(bytes.Buffer)
 	i := strings.NewReader(iStr)
-	err := copyWithoutImportComment(o, i)
-	if err != nil {
-		t.Fatalf("copyWithoutImportComment errored: %s", err.Error())
-	}
+	assert.Nil(t, copyWithoutImportComment(o, i))
 }

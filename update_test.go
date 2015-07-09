@@ -336,9 +336,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	const scratch = "deptest"
 	defer os.RemoveAll(scratch)
 	for i, test := range cases {
@@ -348,12 +346,10 @@ func TestUpdate(t *testing.T) {
 		makeTree(t, &node{src, "", test.start}, "")
 
 		dir := filepath.Join(wd, src, test.cwd)
-		err = os.Chdir(dir)
-		if err != nil {
+		if err := os.Chdir(dir); err != nil {
 			panic(err)
 		}
-		err = os.Setenv("GOPATH", filepath.Join(wd, gopath))
-		if err != nil {
+		if err := os.Setenv("GOPATH", filepath.Join(wd, gopath)); err != nil {
 			panic(err)
 		}
 		log.SetOutput(ioutil.Discard)
@@ -362,22 +358,16 @@ func TestUpdate(t *testing.T) {
 		if g := err != nil; g != test.werr {
 			t.Errorf("update err = %v (%v) want %v", g, err, test.werr)
 		}
-		err = os.Chdir(wd)
-		if err != nil {
+		if err := os.Chdir(wd); err != nil {
 			panic(err)
 		}
 
 		checkTree(t, &node{src, "", test.want})
 
 		f, err := os.Open(filepath.Join(dir, "vendor/Deps.json"))
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Nil(t, err)
 		g := new(Manifest)
-		err = json.NewDecoder(f).Decode(g)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Nil(t, json.NewDecoder(f).Decode(g))
 		f.Close()
 
 		assert.Equal(t, g.ImportPath, test.wdep.ImportPath)
