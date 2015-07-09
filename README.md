@@ -80,3 +80,7 @@ Example Deps:
 	]
 }
 ```
+
+### Acknowledgements
+
+Heavily inspired by godep. The subpackages in this repository are made from godep code, refactored into a package.
