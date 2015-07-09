@@ -47,6 +47,9 @@ func update(args []string) error {
 }
 
 func filter(args []string, deps []pkgs.Dependency) []pkgs.Dependency {
+	if args[0] == "./..." {
+		return deps
+	}
 	matched := []pkgs.Dependency{}
 	for _, arg := range args {
 		// Convert args into their top-level repos, e.g. D/A -> D

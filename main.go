@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	shouldUpdate := flag.Bool("update", false, "update existing packages")
+	shouldUpdate := flag.Bool("u", false, "update existing packages")
 	flag.Parse()
 
 	if err := save(flag.Args()); err != nil {
