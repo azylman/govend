@@ -6,6 +6,8 @@ This tool assumes you are working in a standard Go workspace,
 as described in http://golang.org/doc/code.html. We require Go 1.5
 or newer to build govend itself, and you can only use it with go 1.5 and newer.
 
+**NOTE**: This is currently very alpha. I wrote it at GopherCon and haven't used it very much yet.
+
 ### Install
 
 	$ go get github.com/azylman/govend
