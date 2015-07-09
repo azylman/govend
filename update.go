@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/azylman/govend/vcs"
 )
 
 func update(args []string) error {
@@ -108,7 +110,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		vcs, reporoot, err := VCSFromDir(dep.pkg.Dir, filepath.Join(dep.pkg.Root, "src"))
+		vcs, reporoot, err := vcs.FromDir(dep.pkg.Dir, filepath.Join(dep.pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
@@ -134,19 +136,19 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 		if noupdate[dep.root] {
 			continue
 		}
-		id, err := dep.vcs.identify(dep.pkg.Dir)
+		id, err := dep.vcs.Identify(dep.pkg.Dir)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if dep.vcs.isDirty(dep.pkg.Dir, id) {
+		if dep.vcs.IsDirty(dep.pkg.Dir, id) {
 			log.Println("dirty working tree:", dep.pkg.Dir)
 			err1 = errors.New("error loading dependencies")
 			break
 		}
 		dep.Rev = id
-		dep.Comment = dep.vcs.describe(dep.pkg.Dir, id)
+		dep.Comment = dep.vcs.Describe(dep.pkg.Dir, id)
 		tocopy = append(tocopy, *dep)
 	}
 	if err1 != nil {

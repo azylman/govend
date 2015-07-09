@@ -1,11 +1,10 @@
-package main
+package vcs
 
 import (
 	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/vcs"
@@ -14,40 +13,40 @@ import (
 type VCS struct {
 	vcs *vcs.Cmd
 
-	IdentifyCmd string
-	DescribeCmd string
-	DiffCmd     string
+	identifyCmd string
+	describeCmd string
+	diffCmd     string
 
 	// run in sandbox repos
-	ExistsCmd string
+	existsCmd string
 }
 
 var vcsBzr = &VCS{
 	vcs: vcs.ByCmd("bzr"),
 
-	IdentifyCmd: "version-info --custom --template {revision_id}",
-	DescribeCmd: "revno", // TODO(kr): find tag names if possible
-	DiffCmd:     "diff -r {rev}",
+	identifyCmd: "version-info --custom --template {revision_id}",
+	describeCmd: "revno", // TODO(kr): find tag names if possible
+	diffCmd:     "diff -r {rev}",
 }
 
 var vcsGit = &VCS{
 	vcs: vcs.ByCmd("git"),
 
-	IdentifyCmd: "rev-parse HEAD",
-	DescribeCmd: "describe --tags",
-	DiffCmd:     "diff {rev}",
+	identifyCmd: "rev-parse HEAD",
+	describeCmd: "describe --tags",
+	diffCmd:     "diff {rev}",
 
-	ExistsCmd: "cat-file -e {rev}",
+	existsCmd: "cat-file -e {rev}",
 }
 
 var vcsHg = &VCS{
 	vcs: vcs.ByCmd("hg"),
 
-	IdentifyCmd: "identify --id --debug",
-	DescribeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
-	DiffCmd:     "diff -r {rev}",
+	identifyCmd: "identify --id --debug",
+	describeCmd: "log -r . --template {latesttag}-{latesttagdistance}",
+	diffCmd:     "diff -r {rev}",
 
-	ExistsCmd: "cat -r {rev} .",
+	existsCmd: "cat -r {rev} .",
 }
 
 var cmd = map[*vcs.Cmd]*VCS{
@@ -56,7 +55,7 @@ var cmd = map[*vcs.Cmd]*VCS{
 	vcsHg.vcs:  vcsHg,
 }
 
-func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
+func FromDir(dir, srcRoot string) (*VCS, string, error) {
 	vcscmd, reporoot, err := vcs.FromDir(dir, srcRoot)
 	if err != nil {
 		return nil, "", fmt.Errorf("error while inspecting %q: %v", dir, err)
@@ -68,7 +67,7 @@ func VCSFromDir(dir, srcRoot string) (*VCS, string, error) {
 	return vcsext, reporoot, nil
 }
 
-func VCSForImportPath(importPath string) (*VCS, error) {
+func FromImportPath(importPath string) (*VCS, error) {
 	rr, err := vcs.RepoRootForImportPath(importPath, false)
 	if err != nil {
 		return nil, err
@@ -80,33 +79,22 @@ func VCSForImportPath(importPath string) (*VCS, error) {
 	return vcs, nil
 }
 
-func (v *VCS) identify(dir string) (string, error) {
-	out, err := v.runOutput(dir, v.IdentifyCmd)
+func (v *VCS) Identify(dir string) (string, error) {
+	out, err := v.runOutput(dir, v.identifyCmd)
 	return string(bytes.TrimSpace(out)), err
 }
 
-func (v *VCS) describe(dir, rev string) string {
-	out, err := v.runOutputVerboseOnly(dir, v.DescribeCmd, "rev", rev)
+func (v *VCS) Describe(dir, rev string) string {
+	out, err := v.runOutputVerboseOnly(dir, v.describeCmd, "rev", rev)
 	if err != nil {
 		return ""
 	}
 	return string(bytes.TrimSpace(out))
 }
 
-func (v *VCS) isDirty(dir, rev string) bool {
-	out, err := v.runOutput(dir, v.DiffCmd, "rev", rev)
+func (v *VCS) IsDirty(dir, rev string) bool {
+	out, err := v.runOutput(dir, v.diffCmd, "rev", rev)
 	return err != nil || len(out) != 0
-}
-
-func (v *VCS) exists(dir, rev string) bool {
-	err := v.runVerboseOnly(dir, v.ExistsCmd, "rev", rev)
-	return err == nil
-}
-
-// RevSync checks out the revision given by rev in dir.
-// The dir must exist and rev must be a valid revision.
-func (v *VCS) RevSync(dir, rev string) error {
-	return v.run(dir, v.vcs.TagSyncCmd, "tag", rev)
 }
 
 // run runs the command line cmd in the given directory.
@@ -118,12 +106,6 @@ func (v *VCS) RevSync(dir, rev string) error {
 // Otherwise run discards the command's output.
 func (v *VCS) run(dir string, cmdline string, kv ...string) error {
 	_, err := v.run1(dir, cmdline, kv, true)
-	return err
-}
-
-// runVerboseOnly is like run but only generates error output to standard error in verbose mode.
-func (v *VCS) runVerboseOnly(dir string, cmdline string, kv ...string) error {
-	_, err := v.run1(dir, cmdline, kv, false)
 	return err
 }
 
@@ -176,20 +158,4 @@ func expand(m map[string]string, s string) string {
 		s = strings.Replace(s, "{"+k+"}", v, -1)
 	}
 	return s
-}
-
-// Mercurial has no command equivalent to git remote add.
-// We handle it as a special case in process.
-func hgLink(dir, remote, url string) error {
-	hgdir := filepath.Join(dir, ".hg")
-	if err := os.MkdirAll(hgdir, 0777); err != nil {
-		return err
-	}
-	path := filepath.Join(hgdir, "hgrc")
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(f, "[paths]\n%s = %s\n", remote, url)
-	return f.Close()
 }

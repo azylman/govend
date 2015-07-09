@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/azylman/govend/vcs"
 )
 
 const srcdir = "vendor"
@@ -41,7 +43,7 @@ type Dependency struct {
 	pkg     *Package
 
 	// used by command go
-	vcs *VCS
+	vcs *vcs.VCS
 }
 
 // pkgs is the list of packages to read dependencies
@@ -58,7 +60,7 @@ func (g *Manifest) Load(pkgs []*Package) error {
 			err1 = errors.New("error loading packages")
 			continue
 		}
-		_, reporoot, err := VCSFromDir(p.Dir, filepath.Join(p.Root, "src"))
+		_, reporoot, err := vcs.FromDir(p.Dir, filepath.Join(p.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading packages")
@@ -106,7 +108,7 @@ func (g *Manifest) Load(pkgs []*Package) error {
 		if pkg.Standard {
 			continue
 		}
-		vcs, reporoot, err := VCSFromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
+		vcs, reporoot, err := vcs.FromDir(pkg.Dir, filepath.Join(pkg.Root, "src"))
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
@@ -116,18 +118,18 @@ func (g *Manifest) Load(pkgs []*Package) error {
 			continue
 		}
 		seen = append(seen, pkg.ImportPath)
-		id, err := vcs.identify(pkg.Dir)
+		id, err := vcs.Identify(pkg.Dir)
 		if err != nil {
 			log.Println(err)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		if vcs.isDirty(pkg.Dir, id) {
+		if vcs.IsDirty(pkg.Dir, id) {
 			log.Println("dirty working tree:", pkg.Dir)
 			err1 = errors.New("error loading dependencies")
 			continue
 		}
-		comment := vcs.describe(pkg.Dir, id)
+		comment := vcs.Describe(pkg.Dir, id)
 		g.Deps = append(g.Deps, Dependency{
 			ImportPath: pkg.ImportPath,
 			Rev:        id,
@@ -161,7 +163,7 @@ func ReadAndLoadManifest(path string) (*Manifest, error) {
 
 	for i := range g.Deps {
 		d := &g.Deps[i]
-		d.vcs, err = VCSForImportPath(d.ImportPath)
+		d.vcs, err = vcs.FromImportPath(d.ImportPath)
 		if err != nil {
 			return nil, err
 		}
