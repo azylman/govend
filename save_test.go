@@ -712,9 +712,9 @@ func TestSave(t *testing.T) {
 			panic(err)
 		}
 		if test.werr {
-			assert.NotNil(t, save())
+			assert.NotNil(t, save([]string{}))
 		} else {
-			err := save()
+			err := save([]string{})
 			if err != nil {
 				t.Fatalf("got unexpected error %s", err.Error())
 			}

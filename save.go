@@ -19,7 +19,10 @@ import (
 	"github.com/kr/fs"
 )
 
-func save() error {
+func save(args []string) error {
+	if len(args) == 0 {
+		args = []string{"./..."}
+	}
 	ver, err := goVersion()
 	if err != nil {
 		return err
@@ -36,7 +39,7 @@ func save() error {
 	manifest.ImportPath = path
 	manifest.GoVersion = ver
 
-	deps, err := pkgs.ListDeps("./...")
+	deps, err := pkgs.ListDeps(args...)
 	if err != nil {
 		return err
 	}

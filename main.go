@@ -10,7 +10,7 @@ func main() {
 	shouldUpdate := flag.Bool("update", false, "update existing packages")
 	flag.Parse()
 
-	if err := save(); err != nil {
+	if err := save(flag.Args()); err != nil {
 		fmt.Fprintf(os.Stderr, "error adding new dependencies: %s", err.Error())
 		os.Exit(1)
 	}
