@@ -27,23 +27,23 @@ func save() error {
 		return err
 	}
 
-	gold, err := readOldDeps()
+	manifest, err := readCurManifest()
 	if err != nil {
 		return err
 	}
-	gold.ImportPath = dot[0].ImportPath
-	gold.GoVersion = ver
+	manifest.ImportPath = dot[0].ImportPath
+	manifest.GoVersion = ver
 
-	gnew := &Deps{}
-	if gnew.Load(dot); err != nil {
+	deps := &Manifest{}
+	if deps.Load(dot); err != nil {
 		return err
 	}
 
-	rem := subDeps(gold.Deps, gnew.Deps)
-	add := subDeps(gnew.Deps, gold.Deps)
-	gold.Deps = subDeps(gold.Deps, rem)
-	gold.Deps = append(gold.Deps, add...)
-	if err := checkForConflicts(gold.Deps); err != nil {
+	rem := subDeps(manifest.Deps, deps.Deps)
+	add := subDeps(deps.Deps, manifest.Deps)
+	manifest.Deps = subDeps(manifest.Deps, rem)
+	manifest.Deps = append(manifest.Deps, add...)
+	if err := checkForConflicts(manifest.Deps); err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func save() error {
 		return err
 	}
 	defer f.Close()
-	if _, err := gold.WriteTo(f); err != nil {
+	if _, err := manifest.WriteTo(f); err != nil {
 		return err
 	}
 
@@ -96,21 +96,21 @@ func checkForConflicts(deps []Dependency) error {
 	return nil
 }
 
-func readOldDeps() (Deps, error) {
+func readCurManifest() (Manifest, error) {
 	f, err := os.Open(filepath.Join(srcdir, "Deps.json"))
 	if os.IsNotExist(err) {
-		return Deps{}, nil
+		return Manifest{}, nil
 	}
 	if err != nil {
-		return Deps{}, err
+		return Manifest{}, err
 	}
 	defer f.Close()
-	var deps Deps
-	err = json.NewDecoder(f).Decode(&deps)
-	if deps.Deps == nil {
-		deps.Deps = []Dependency{}
+	var man Manifest
+	err = json.NewDecoder(f).Decode(&man)
+	if man.Deps == nil {
+		man.Deps = []Dependency{}
 	}
-	return deps, err
+	return man, err
 }
 
 // subDeps returns a - b, using ImportPath for equality.

@@ -19,7 +19,7 @@ func TestUpdate(t *testing.T) {
 		args  []string
 		start []*node
 		want  []*node
-		wdep  Deps
+		wdep  Manifest
 		werr  bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -99,7 +99,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D", "E") + decl("D2"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -148,7 +148,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -185,7 +185,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -221,7 +221,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -274,7 +274,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -316,7 +316,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -364,7 +364,7 @@ func TestUpdate(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		g := new(Deps)
+		g := new(Manifest)
 		err = json.NewDecoder(f).Decode(g)
 		if err != nil {
 			t.Error(err)

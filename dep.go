@@ -16,9 +16,9 @@ import (
 const srcdir = "vendor"
 const sep = "/" + srcdir + "/"
 
-// Deps describes what a package needs to be rebuilt reproducibly.
+// Manifest describes what a package needs to be rebuilt reproducibly.
 // It's the same information stored in file Deps.
-type Deps struct {
+type Manifest struct {
 	ImportPath string
 	GoVersion  string
 	Packages   []string `json:",omitempty"` // Arguments to save, if any.
@@ -45,7 +45,7 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Deps) Load(pkgs []*Package) error {
+func (g *Manifest) Load(pkgs []*Package) error {
 	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
@@ -144,7 +144,7 @@ func (g *Deps) Load(pkgs []*Package) error {
 	return err1
 }
 
-func ReadDeps(path string, g *Deps) error {
+func ReadManifest(path string, g *Manifest) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -152,9 +152,9 @@ func ReadDeps(path string, g *Deps) error {
 	return json.NewDecoder(f).Decode(g)
 }
 
-func ReadAndLoadDeps(path string) (*Deps, error) {
-	g := new(Deps)
-	err := ReadDeps(path, g)
+func ReadAndLoadManifest(path string) (*Manifest, error) {
+	g := new(Manifest)
+	err := ReadManifest(path, g)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func ReadAndLoadDeps(path string) (*Deps, error) {
 	return g, nil
 }
 
-func (g *Deps) WriteTo(w io.Writer) (int64, error) {
+func (g *Manifest) WriteTo(w io.Writer) (int64, error) {
 	b, err := json.MarshalIndent(g, "", "\t")
 	if err != nil {
 		return 0, err
@@ -207,7 +207,7 @@ func uniq(a []string) []string {
 // goVersion returns the version string of the Go compiler
 // currently installed, e.g. "go1.1rc3".
 func goVersion() (string, error) {
-	// Deps might have been compiled with a different
+	// govend might have been compiled with a different
 	// version, so we can't just use runtime.Version here.
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr

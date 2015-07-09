@@ -13,9 +13,9 @@ func update(args []string) error {
 	if len(args) == 0 {
 		args = []string{"./..."}
 	}
-	var g Deps
+	var g Manifest
 	manifest := filepath.Join(srcdir, "Deps.json")
-	if err := ReadDeps(manifest, &g); err != nil {
+	if err := ReadManifest(manifest, &g); err != nil {
 		return err
 	}
 	for _, arg := range args {

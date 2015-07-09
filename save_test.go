@@ -48,8 +48,8 @@ func decl(name string) string {
 	return "var " + name + " int\n"
 }
 
-func deps(importpath string, keyval ...string) *Deps {
-	g := &Deps{
+func deps(importpath string, keyval ...string) *Manifest {
+	g := &Manifest{
 		ImportPath: importpath,
 	}
 	for i := 0; i < len(keyval); i += 2 {
@@ -68,7 +68,7 @@ func TestSave(t *testing.T) {
 		start    []*node
 		altstart []*node
 		want     []*node
-		wdep     Deps
+		wdep     Manifest
 		werr     bool
 	}{
 		{
@@ -96,7 +96,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -128,7 +128,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", "package D\n", nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -155,7 +155,7 @@ func TestSave(t *testing.T) {
 				{"P/main.go", pkg("P", "P/Q"), nil},
 				{"P/Q/main.go", pkg("Q"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "P",
 				Deps:       []Dependency{},
 			},
@@ -179,7 +179,7 @@ func TestSave(t *testing.T) {
 				{"P/main.go", pkg("P"), nil},
 				{"P/Q/main.go", pkg("Q", "P"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "P",
 				Deps:       []Dependency{},
 			},
@@ -218,7 +218,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D", "T"), nil},
 				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -253,7 +253,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D"), nil},
 				{"C/vendor/D/P/main.go", pkg("P"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -287,7 +287,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/P/main.go", pkg("P"), nil},
 				{"C/vendor/D/Q/main.go", pkg("Q"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/P", Comment: "D1"},
@@ -321,7 +321,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -366,7 +366,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/E/main.go", pkg("E"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -412,7 +412,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/E/main.go", "(absent)", nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -447,7 +447,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -485,7 +485,7 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -521,7 +521,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -558,7 +558,7 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -594,7 +594,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", "(absent)", nil},
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -631,7 +631,7 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A2"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D2"},
@@ -670,7 +670,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
-			wdep: Deps{
+			wdep: Manifest{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -728,7 +728,7 @@ func TestSave(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		g := new(Deps)
+		g := new(Manifest)
 		err = json.NewDecoder(f).Decode(g)
 		if err != nil {
 			t.Error(err)
@@ -745,7 +745,7 @@ func TestSave(t *testing.T) {
 
 func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 	walkTree(tree, tree.path, func(path string, n *node) {
-		g, isDeps := n.body.(*Deps)
+		g, isDeps := n.body.(*Manifest)
 		body, _ := n.body.(string)
 		switch {
 		case isDeps:
