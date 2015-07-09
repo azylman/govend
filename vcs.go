@@ -150,7 +150,7 @@ func (v *VCS) run1(dir string, cmdline string, kv []string, verbose bool) ([]byt
 
 	_, err := exec.LookPath(v.vcs.Cmd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "govendor: missing %s command.\n", v.vcs.Name)
+		fmt.Fprintf(os.Stderr, "govend: missing %s command.\n", v.vcs.Name)
 		return nil, err
 	}
 

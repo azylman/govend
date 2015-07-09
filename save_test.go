@@ -774,7 +774,7 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
 			run(t, dir, "git", "add", ".")
-			run(t, dir, "git", "commit", "-m", "govendor")
+			run(t, dir, "git", "commit", "-m", "govend")
 			if body != "" {
 				run(t, dir, "git", "tag", body)
 			}

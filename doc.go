@@ -1,13 +1,13 @@
 /*
 
-Command govendor helps build packages reproducibly by fixing
+Command govend helps build packages reproducibly by fixing
 their dependencies.
 
 Example Usage
 
 Save currently-used dependencies to file Deps:
 
-	$ govendor
+	$ govend
 
 Build project using saved dependencies:
 

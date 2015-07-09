@@ -1,26 +1,26 @@
-### Govendor
+### Govend
 
-Command govendor helps build packages reproducibly by fixing their dependencies.
+Command govend helps build packages reproducibly by fixing their dependencies.
 
 This tool assumes you are working in a standard Go workspace,
 as described in http://golang.org/doc/code.html. We require Go 1.5
-or newer to build govendor itself, and you can only use it with go 1.5 and newer.
+or newer to build govend itself, and you can only use it with go 1.5 and newer.
 
 **NOTE**: This is currently a forked, heavily stripped down version of https://github.com/tools/godep.
 
 ### Install
 
-	$ go get github.com/azylman/govendor
+	$ go get github.com/azylman/govend
 
 #### Getting Started
 
-How to add govendor in a new project.
+How to add govend in a new project.
 
 Assuming you've got everything working already, so you can
 build your project with `go install` and test it with `go test`,
 it's one command to start using:
 
-	$ govendor
+	$ govend
 
 This will save a list of dependencies to the file vendor/Deps.json,
 and copy their source code into vendor/.
@@ -33,15 +33,15 @@ To add a new package foo/bar, do this:
 
 1. Run `go get foo/bar`
 2. Edit your code to import foo/bar.
-3. Run `govendor`.
+3. Run `govend`.
 
 #### Update a Dependency
 
 To update a package from your `$GOPATH`, do this:
 
 1. Run `go get -u foo/bar`
-2. Run `govendor -u foo/bar`. (You can use the `...` wildcard,
-for example `govendor -u foo/...`).
+2. Run `govend -u foo/bar`. (You can use the `...` wildcard,
+for example `govend -u foo/...`).
 
 ### File Format
 

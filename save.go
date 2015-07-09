@@ -308,10 +308,10 @@ func writeFile(name, body string) error {
 
 const (
 	Readme = `
-This directory tree is generated automatically by govendor.
+This directory tree is generated automatically by govend.
 
 Please do not edit.
 
-See https://github.com/azylman/govendor for more information.
+See https://github.com/azylman/govend for more information.
 `
 )
