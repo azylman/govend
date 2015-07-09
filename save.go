@@ -71,16 +71,6 @@ func save(args []string) error {
 	return copySrc(srcdir, add)
 }
 
-type revError struct {
-	ImportPath string
-	HaveRev    string
-	WantRev    string
-}
-
-func (v *revError) Error() string {
-	return v.ImportPath + ": revision is " + v.HaveRev + ", want " + v.WantRev
-}
-
 func checkForConflicts(deps []pkgs.Dependency) error {
 	// We can't handle mismatched versions for packages in
 	// the same repo, so report that as an error.
@@ -89,11 +79,11 @@ func checkForConflicts(deps []pkgs.Dependency) error {
 			switch {
 			case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
 				if da.Rev != db.Rev {
-					return &revError{db.ImportPath, db.Rev, da.Rev}
+					return fmt.Errorf("conflicting revisions %s and %s", da.Rev, db.Rev)
 				}
 			case strings.HasPrefix(da.ImportPath, db.Root+"/"):
 				if da.Rev != db.Rev {
-					return &revError{db.ImportPath, db.Rev, da.Rev}
+					return fmt.Errorf("conflicting revisions %s and %s", da.Rev, db.Rev)
 				}
 			}
 		}
@@ -121,14 +111,17 @@ func readCurManifest() (Manifest, error) {
 // subDeps returns a - b, using ImportPath for equality.
 func subDeps(a, b []pkgs.Dependency) (diff []pkgs.Dependency) {
 	diff = []pkgs.Dependency{}
-Diff:
 	for _, da := range a {
+		dupe := false
 		for _, db := range b {
 			if da.ImportPath == db.ImportPath {
-				continue Diff
+				dupe = true
+				break
 			}
 		}
-		diff = append(diff, da)
+		if !dupe {
+			diff = append(diff, da)
+		}
 	}
 	return diff
 }
