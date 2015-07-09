@@ -48,8 +48,8 @@ func decl(name string) string {
 	return "var " + name + " int\n"
 }
 
-func godeps(importpath string, keyval ...string) *Godeps {
-	g := &Godeps{
+func deps(importpath string, keyval ...string) *Deps {
+	g := &Deps{
 		ImportPath: importpath,
 	}
 	for i := 0; i < len(keyval); i += 2 {
@@ -68,7 +68,7 @@ func TestSave(t *testing.T) {
 		start    []*node
 		altstart []*node
 		want     []*node
-		wdep     Godeps
+		wdep     Deps
 		werr     bool
 	}{
 		{
@@ -96,7 +96,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -128,7 +128,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", "package D\n", nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -146,7 +146,7 @@ func TestSave(t *testing.T) {
 					[]*node{
 						{"main.go", pkg("P", "P/Q"), nil},
 						{"Q/main.go", pkg("Q"), nil},
-						{"vendor/Godeps.json", `{}`, nil},
+						{"vendor/Deps.json", `{}`, nil},
 						{"+git", "C1", nil},
 					},
 				},
@@ -155,7 +155,7 @@ func TestSave(t *testing.T) {
 				{"P/main.go", pkg("P", "P/Q"), nil},
 				{"P/Q/main.go", pkg("Q"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "P",
 				Deps:       []Dependency{},
 			},
@@ -179,7 +179,7 @@ func TestSave(t *testing.T) {
 				{"P/main.go", pkg("P"), nil},
 				{"P/Q/main.go", pkg("Q", "P"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "P",
 				Deps:       []Dependency{},
 			},
@@ -218,7 +218,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D", "T"), nil},
 				{"C/vendor/T/main.go", pkg("T"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -253,7 +253,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D"), nil},
 				{"C/vendor/D/P/main.go", pkg("P"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -287,7 +287,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/P/main.go", pkg("P"), nil},
 				{"C/vendor/D/Q/main.go", pkg("Q"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/P", Comment: "D1"},
@@ -321,7 +321,7 @@ func TestSave(t *testing.T) {
 				{"C/main.go", pkg("main", "D"), nil},
 				{"C/vendor/D/main.go", pkg("D"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -355,7 +355,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D", "E"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"+git", "", nil},
 					},
@@ -366,7 +366,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/E/main.go", pkg("E"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -401,7 +401,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1", "E", "E1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
 						{"+git", "", nil},
@@ -412,7 +412,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/E/main.go", "(absent)", nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -437,7 +437,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
@@ -447,7 +447,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -476,7 +476,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
@@ -485,7 +485,7 @@ func TestSave(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -511,7 +511,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
@@ -521,7 +521,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -549,22 +549,21 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
-					{ImportPath: "D/A", Comment: "D1"},
+					{ImportPath: "D", Comment: "D2"},
 				},
 			},
-			werr: true,
 		},
 		{
 			desc: "replace dependency from same repo child dir",
@@ -584,7 +583,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
@@ -595,7 +594,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/main.go", "(absent)", nil},
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -623,24 +622,21 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
-						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"+git", "", nil},
 					},
 				},
 			},
 			want: []*node{
-				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
-				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("A2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
-					{ImportPath: "D", Comment: "D1"},
+					{ImportPath: "D/A", Comment: "D2"},
 				},
 			},
-			werr: true,
 		},
 		{
 			desc: "Bug https://github.com/tools/godep/issues/85",
@@ -663,7 +659,7 @@ func TestSave(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1", "D/B", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 						{"vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 						{"+git", "", nil},
@@ -674,7 +670,7 @@ func TestSave(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("A1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("B1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -688,9 +684,10 @@ func TestSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const scratch = "godeptest"
+	const scratch = "deptest"
 	defer os.RemoveAll(scratch)
 	for _, test := range cases {
+		t.Logf("desc: %s", test.desc)
 		err = os.RemoveAll(scratch)
 		if err != nil {
 			t.Fatal(err)
@@ -713,25 +710,25 @@ func TestSave(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		err = save()
-		if g := err != nil; g != test.werr {
+		if test.werr {
+			assert.NotNil(t, save())
+		} else {
+			err := save()
 			if err != nil {
-				t.Log(err)
+				t.Fatalf("got unexpected error %s", err.Error())
 			}
-			t.Errorf("save err = %v want %v", g, test.werr)
 		}
-		err = os.Chdir(wd)
-		if err != nil {
+		if err := os.Chdir(wd); err != nil {
 			panic(err)
 		}
 
 		checkTree(t, &node{src, "", test.want})
 
-		f, err := os.Open(filepath.Join(dir, "vendor/Godeps.json"))
+		f, err := os.Open(filepath.Join(dir, "vendor/Deps.json"))
 		if err != nil {
 			t.Error(err)
 		}
-		g := new(Godeps)
+		g := new(Deps)
 		err = json.NewDecoder(f).Decode(g)
 		if err != nil {
 			t.Error(err)
@@ -742,16 +739,16 @@ func TestSave(t *testing.T) {
 		for i := range g.Deps {
 			g.Deps[i].Rev = ""
 		}
-		assert.Equal(t, g.Deps, test.wdep.Deps)
+		assert.Equal(t, test.wdep.Deps, g.Deps)
 	}
 }
 
 func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 	walkTree(tree, tree.path, func(path string, n *node) {
-		g, isGodeps := n.body.(*Godeps)
+		g, isDeps := n.body.(*Deps)
 		body, _ := n.body.(string)
 		switch {
-		case isGodeps:
+		case isDeps:
 			for i, dep := range g.Deps {
 				rel := filepath.FromSlash(dep.ImportPath)
 				dir := filepath.Join(tree.path, rel)
@@ -777,7 +774,7 @@ func makeTree(t *testing.T, tree *node, altpath string) (gopath string) {
 			dir := filepath.Dir(path)
 			run(t, dir, "git", "init") // repo might already exist, but ok
 			run(t, dir, "git", "add", ".")
-			run(t, dir, "git", "commit", "-m", "godep")
+			run(t, dir, "git", "commit", "-m", "govendor")
 			if body != "" {
 				run(t, dir, "git", "tag", body)
 			}

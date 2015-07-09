@@ -13,9 +13,11 @@ import (
 	"strings"
 )
 
-// Godeps describes what a package needs to be rebuilt reproducibly.
-// It's the same information stored in file Godeps.
-type Godeps struct {
+const sep = "/vendor/"
+
+// Deps describes what a package needs to be rebuilt reproducibly.
+// It's the same information stored in file Deps.
+type Deps struct {
 	ImportPath string
 	GoVersion  string
 	Packages   []string `json:",omitempty"` // Arguments to save, if any.
@@ -42,7 +44,7 @@ type Dependency struct {
 }
 
 // pkgs is the list of packages to read dependencies
-func (g *Godeps) Load(pkgs []*Package) error {
+func (g *Deps) Load(pkgs []*Package) error {
 	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
@@ -138,7 +140,7 @@ func (g *Godeps) Load(pkgs []*Package) error {
 	return err1
 }
 
-func ReadGodeps(path string, g *Godeps) error {
+func ReadDeps(path string, g *Deps) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -146,7 +148,7 @@ func ReadGodeps(path string, g *Godeps) error {
 	return json.NewDecoder(f).Decode(g)
 }
 
-func copyGodeps(g *Godeps) *Godeps {
+func copyDeps(g *Deps) *Deps {
 	h := *g
 	h.Deps = make([]Dependency, len(g.Deps))
 	copy(h.Deps, g.Deps)
@@ -165,9 +167,9 @@ func eqDeps(a, b []Dependency) bool {
 	return ok
 }
 
-func ReadAndLoadGodeps(path string) (*Godeps, error) {
-	g := new(Godeps)
-	err := ReadGodeps(path, g)
+func ReadAndLoadDeps(path string) (*Deps, error) {
+	g := new(Deps)
+	err := ReadDeps(path, g)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,7 @@ func ReadAndLoadGodeps(path string) (*Godeps, error) {
 	return g, nil
 }
 
-func (g *Godeps) WriteTo(w io.Writer) (int64, error) {
+func (g *Deps) WriteTo(w io.Writer) (int64, error) {
 	b, err := json.MarshalIndent(g, "", "\t")
 	if err != nil {
 		return 0, err
@@ -220,7 +222,7 @@ func uniq(a []string) []string {
 // goVersion returns the version string of the Go compiler
 // currently installed, e.g. "go1.1rc3".
 func goVersion() (string, error) {
-	// Godep might have been compiled with a different
+	// Deps might have been compiled with a different
 	// version, so we can't just use runtime.Version here.
 	cmd := exec.Command("go", "version")
 	cmd.Stderr = os.Stderr
@@ -233,4 +235,19 @@ func goVersion() (string, error) {
 		return "", fmt.Errorf("Error splitting output of `go version`: Expected 3 or more elements, but there are < 3: %q", string(out))
 	}
 	return p[2], nil
+}
+
+// unqualify returns the part of importPath after the last
+// occurrence of the signature path elements
+// (vendor) that always precede imported
+// packages in rewritten import paths.
+//
+// For example,
+//   unqualify(C)                         = C
+//   unqualify(D/vendor/C) = C
+func unqualify(importPath string) string {
+	if i := strings.LastIndex(importPath, sep); i != -1 {
+		importPath = importPath[i+len(sep):]
+	}
+	return importPath
 }

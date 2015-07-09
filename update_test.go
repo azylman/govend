@@ -19,7 +19,7 @@ func TestUpdate(t *testing.T) {
 		args  []string
 		start []*node
 		want  []*node
-		wdep  Godeps
+		wdep  Deps
 		werr  bool
 	}{
 		{
@@ -42,7 +42,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"+git", "", nil},
 					},
@@ -51,7 +51,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -88,7 +88,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D", "E"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1", "E", "E1"), nil},
 						{"vendor/D/main.go", pkg("D", "E") + decl("D1"), nil},
 						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
 						{"+git", "", nil},
@@ -99,7 +99,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D", "E") + decl("D2"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -137,7 +137,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D", "E"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1", "E", "E1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1", "E", "E1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
 						{"+git", "", nil},
@@ -148,7 +148,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -176,7 +176,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"+git", "", nil},
 					},
@@ -185,7 +185,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D2"},
@@ -212,7 +212,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D"), nil},
-						{"vendor/Godeps.json", godeps("C", "D", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1"), nil},
 						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
 						{"+git", "", nil},
 					},
@@ -221,7 +221,7 @@ func TestUpdate(t *testing.T) {
 			want: []*node{
 				{"C/vendor/D/main.go", pkg("D") + decl("D1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D", Comment: "D1"},
@@ -261,7 +261,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B", "E"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1", "E", "E1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1", "D/B", "D1", "E", "E1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
 						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
@@ -274,7 +274,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -305,7 +305,7 @@ func TestUpdate(t *testing.T) {
 					"",
 					[]*node{
 						{"main.go", pkg("main", "D/A", "D/B"), nil},
-						{"vendor/Godeps.json", godeps("C", "D/A", "D1", "D/B", "D1"), nil},
+						{"vendor/Deps.json", deps("C", "D/A", "D1", "D/B", "D1"), nil},
 						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
 						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 						{"+git", "", nil},
@@ -316,7 +316,7 @@ func TestUpdate(t *testing.T) {
 				{"C/vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
 				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
 			},
-			wdep: Godeps{
+			wdep: Deps{
 				ImportPath: "C",
 				Deps: []Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
@@ -331,7 +331,7 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const scratch = "godeptest"
+	const scratch = "deptest"
 	defer os.RemoveAll(scratch)
 	for i, test := range cases {
 		gopath := filepath.Join(scratch, fmt.Sprintf("%d", i))
@@ -360,11 +360,11 @@ func TestUpdate(t *testing.T) {
 
 		checkTree(t, &node{src, "", test.want})
 
-		f, err := os.Open(filepath.Join(dir, "vendor/Godeps.json"))
+		f, err := os.Open(filepath.Join(dir, "vendor/Deps.json"))
 		if err != nil {
 			t.Error(err)
 		}
-		g := new(Godeps)
+		g := new(Deps)
 		err = json.NewDecoder(f).Decode(g)
 		if err != nil {
 			t.Error(err)

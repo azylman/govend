@@ -16,45 +16,6 @@ import (
 	"github.com/kr/fs"
 )
 
-var cmdSave = &Command{
-	Usage: "save",
-	Short: "list and copy dependencies into Godeps",
-	Long: `
-Save writes a list of the dependencies of the named packages along
-with the exact source control revision of each dependency, and copies
-their source code into a subdirectory.
-
-The list is written to vendor/Godeps.json, and source code for all
-dependencies is copied into vendor/
-
-The dependency list is a JSON document with the following structure:
-
-	type Godeps struct {
-		ImportPath string
-		GoVersion  string   // Abridged output of 'go version'.
-		Packages   []string // Arguments to godep save, if any.
-		Deps       []struct {
-			ImportPath string
-			Comment    string // Tag or description of commit.
-			Rev        string // VCS-specific commit ID.
-		}
-	}
-
-Any dependencies already present in the list will be left unchanged.
-To update a dependency to a newer revision, use 'godep update'.
-
-For more about specifying packages, see 'go help packages'.
-`,
-	Run: runSave,
-}
-
-func runSave(cmd *Command, args []string) {
-	err := save()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
 func save() error {
 	dot, err := LoadPackages("./...")
 	if err != nil {
@@ -66,74 +27,50 @@ func save() error {
 		return err
 	}
 
-	gnew := &Godeps{
-		ImportPath: dot[0].ImportPath,
-		GoVersion:  ver,
+	gold, err := readOldDeps()
+	if err != nil {
+		return err
 	}
+	if gold.Deps == nil {
+		gold.Deps = make([]Dependency, 0) // produce json [], not null
+	}
+	gold.ImportPath = dot[0].ImportPath
+	gold.GoVersion = ver
+
+	gnew := &Deps{}
 	if gnew.Load(dot); err != nil {
 		return err
 	}
 	if gnew.Deps == nil {
 		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
-	gdisk := copyGodeps(gnew)
 
-	var gold Godeps
-	oldIsFile, err := readOldGodeps(&gold)
-	if err != nil {
+	srcdir := "vendor"
+	rem := subDeps(gold.Deps, gnew.Deps)
+	add := subDeps(gnew.Deps, gold.Deps)
+	gold.Deps = subDeps(gold.Deps, rem)
+	gold.Deps = append(gold.Deps, add...)
+	if err := checkForConflicts(gold.Deps); err != nil {
 		return err
-	}
-	if err := carryVersions(&gold, gnew); err != nil {
-		return err
-	}
-
-	if oldIsFile {
-		// If we are migrating from an old format file,
-		// we require that the listed version of every
-		// dependency must be installed in GOPATH, so it's
-		// available to copy.
-		if !eqDeps(gnew.Deps, gdisk.Deps) {
-			return errors.New(strings.TrimSpace(needRestore))
-		}
-		gold = Godeps{}
 	}
 
 	readme := filepath.Join("vendor", "README")
 	if writeFile(readme, strings.TrimSpace(Readme)+"\n"); err != nil {
 		log.Println(err)
 	}
-	f, err := os.Create(filepath.Join("vendor", "Godeps.json"))
+	f, err := os.Create(filepath.Join("vendor", "Deps.json"))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if _, err := gnew.WriteTo(f); err != nil {
+	if _, err := gold.WriteTo(f); err != nil {
 		return err
 	}
-	// We use a name starting with "_" so the go tool
-	// ignores this directory when traversing packages
-	// starting at the project's root. For example,
-	//   godep go list ./...
-	srcdir := "vendor"
-	rem := subDeps(gold.Deps, gnew.Deps)
-	add := subDeps(gnew.Deps, gold.Deps)
+
 	if err := removeSrc(srcdir, rem); err != nil {
 		return err
 	}
 	return copySrc(srcdir, add)
-}
-
-func readOldGodeps(g *Godeps) (isFile bool, err error) {
-	f, err := os.Open(filepath.Join("vendor", "Godeps.json"))
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-	err = json.NewDecoder(f).Decode(g)
-	return isFile, err
 }
 
 type revError struct {
@@ -146,50 +83,43 @@ func (v *revError) Error() string {
 	return v.ImportPath + ": revision is " + v.HaveRev + ", want " + v.WantRev
 }
 
-// carryVersions copies Rev and Comment from a to b for
-// each dependency with an identical ImportPath. For any
-// dependency in b that appears to be from the same repo
-// as one in a (for example, a parent or child directory),
-// the Rev must already match - otherwise it is an error.
-func carryVersions(a, b *Godeps) error {
-	for i := range b.Deps {
-		if err := carryVersion(a, &b.Deps[i]); err != nil {
-			return err
+func checkForConflicts(deps []Dependency) error {
+	// We can't handle mismatched versions for packages in
+	// the same repo, so report that as an error.
+	for _, da := range deps {
+		for _, db := range deps {
+			switch {
+			case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
+				if da.Rev != db.Rev {
+					return &revError{db.ImportPath, db.Rev, da.Rev}
+				}
+			case strings.HasPrefix(da.ImportPath, db.root+"/"):
+				if da.Rev != db.Rev {
+					return &revError{db.ImportPath, db.Rev, da.Rev}
+				}
+			}
 		}
 	}
 	return nil
 }
 
-func carryVersion(a *Godeps, db *Dependency) error {
-	// First see if this exact package is already in the list.
-	for _, da := range a.Deps {
-		if db.ImportPath == da.ImportPath {
-			db.Rev = da.Rev
-			db.Comment = da.Comment
-			return nil
-		}
+func readOldDeps() (Deps, error) {
+	f, err := os.Open(filepath.Join("vendor", "Deps.json"))
+	if os.IsNotExist(err) {
+		return Deps{}, nil
 	}
-	// No exact match, check for child or sibling package.
-	// We can't handle mismatched versions for packages in
-	// the same repo, so report that as an error.
-	for _, da := range a.Deps {
-		switch {
-		case strings.HasPrefix(db.ImportPath, da.ImportPath+"/"):
-			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, db.Rev, da.Rev}
-			}
-		case strings.HasPrefix(da.ImportPath, db.root+"/"):
-			if da.Rev != db.Rev {
-				return &revError{db.ImportPath, db.Rev, da.Rev}
-			}
-		}
+	if err != nil {
+		return Deps{}, err
 	}
-	// No related package in the list, must be a new repo.
-	return nil
+	defer f.Close()
+	var deps Deps
+	err = json.NewDecoder(f).Decode(&deps)
+	return deps, err
 }
 
 // subDeps returns a - b, using ImportPath for equality.
 func subDeps(a, b []Dependency) (diff []Dependency) {
+	diff = []Dependency{}
 Diff:
 	for _, da := range a {
 		for _, db := range b {
@@ -382,21 +312,10 @@ func writeFile(name, body string) error {
 
 const (
 	Readme = `
-This directory tree is generated automatically by godep.
+This directory tree is generated automatically by govendor.
 
 Please do not edit.
 
-See https://github.com/tools/godep for more information.
-`
-	needRestore = `
-mismatched versions while migrating
-
-It looks like you are switching from the old Godeps format
-(from flag -copy=false). The old format is just a file; it
-doesn't contain source code. For this migration, godep needs
-the appropriate version of each dependency to be installed in
-GOPATH, so that the source code is available to copy.
-
-To fix this, run 'godep restore'.
+See https://github.com/azylman/govendor for more information.
 `
 )

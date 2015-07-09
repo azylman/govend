@@ -1,22 +1,21 @@
 /*
 
-Command godep helps build packages reproducibly by fixing
+Command govendor helps build packages reproducibly by fixing
 their dependencies.
 
 Example Usage
 
-Save currently-used dependencies to file Godeps:
+Save currently-used dependencies to file Deps:
 
-	$ godep save
+	$ govendor
 
 Build project using saved dependencies:
 
-	$ godep go install
+	$ GO15VENDOREXPERIMENT=1 go build
 
 or
 
-	$ GOPATH=`godep path`:$GOPATH
-	$ go install
+	$ GO15VENDOREXPERIMENT=1 go install
 
 */
 package main

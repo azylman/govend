@@ -20,9 +20,9 @@ Assuming you've got everything working already, so you can
 build your project with `go install` and test it with `go test`,
 it's one command to start using:
 
-	$ govendor save
+	$ govendor
 
-This will save a list of dependencies to the file vendor/Godeps.json (for future compatibility with godep),
+This will save a list of dependencies to the file vendor/Deps.json,
 and copy their source code into vendor/.
 Read over its contents and make sure it looks reasonable.
 Then commit the whole vendor directory to version control.
@@ -33,26 +33,22 @@ To add a new package foo/bar, do this:
 
 1. Run `go get foo/bar`
 2. Edit your code to import foo/bar.
-3. Run `govendor save`.
+3. Run `govendor`.
 
 #### Update a Dependency
 
 To update a package from your `$GOPATH`, do this:
 
 1. Run `go get -u foo/bar`
-2. Run `govendor update foo/bar`. (You can use the `...` wildcard,
-for example `govendor update foo/...`).
-
-Before committing the change, you'll probably want to inspect
-the changes to Godeps, for example with `git diff`,
-and make sure it looks reasonable.
+2. Run `govendor -u foo/bar`. (You can use the `...` wildcard,
+for example `govendor -u foo/...`).
 
 ### File Format
 
-Godeps is a json file with the following structure:
+Deps is a json file with the following structure:
 
 ```go
-type Godeps struct {
+type Deps struct {
 	ImportPath string
 	GoVersion  string   // Abridged output of 'go version'.
 	Deps       []struct {
@@ -63,7 +59,7 @@ type Godeps struct {
 }
 ```
 
-Example Godeps:
+Example Deps:
 
 ```json
 {

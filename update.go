@@ -2,44 +2,20 @@ package main
 
 import (
 	"errors"
-	"go/parser"
-	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
-
-var cmdUpdate = &Command{
-	Usage: "update [packages]",
-	Short: "use different revision of selected packages",
-	Long: `
-Update changes the named dependency packages to use the
-revision of each currently installed in GOPATH. New code will
-be copied into vendor and the new revision will be written to
-the manifest.
-
-For more about specifying packages, see 'go help packages'.
-`,
-	Run: runUpdate,
-}
-
-func runUpdate(cmd *Command, args []string) {
-	err := update(args)
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
 func update(args []string) error {
 	if len(args) == 0 {
 		args = []string{"."}
 	}
-	var g Godeps
-	manifest := filepath.Join("vendor", "Godeps.json")
-	if err := ReadGodeps(manifest, &g); err != nil {
+	var g Deps
+	manifest := filepath.Join("vendor", "Deps.json")
+	if err := ReadDeps(manifest, &g); err != nil {
 		return err
 	}
 	for _, arg := range args {
@@ -67,59 +43,8 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
-	if manifest != "Godeps" {
-		srcdir := filepath.FromSlash("vendor")
-		copySrc(srcdir, deps)
-	}
-	ok, err := needRewrite(g.Packages)
-	if err != nil {
-		return err
-	}
-	var rewritePaths []string
-	if ok {
-		for _, dep := range g.Deps {
-			rewritePaths = append(rewritePaths, dep.ImportPath)
-		}
-	}
-	return rewrite(nil, g.ImportPath, rewritePaths)
-}
-
-func needRewrite(importPaths []string) (bool, error) {
-	if len(importPaths) == 0 {
-		importPaths = []string{"."}
-	}
-	a, err := LoadPackages(importPaths...)
-	if err != nil {
-		return false, err
-	}
-	for _, p := range a {
-		for _, name := range p.allGoFiles() {
-			path := filepath.Join(p.Dir, name)
-			hasSep, err := hasRewrittenImportStatement(path)
-			if err != nil {
-				return false, err
-			}
-			if hasSep {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
-func hasRewrittenImportStatement(path string) (bool, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, path, nil, 0)
-	if err != nil {
-		return false, err
-	}
-	for _, s := range f.Imports {
-		name, _ := strconv.Unquote(s.Path.Value)
-		if strings.Contains(name, sep) {
-			return true, nil
-		}
-	}
-	return false, nil
+	srcdir := filepath.FromSlash("vendor")
+	return copySrc(srcdir, deps)
 }
 
 // markMatches marks each entry in deps with an import path that
