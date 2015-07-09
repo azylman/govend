@@ -11,7 +11,7 @@ import (
 
 func update(args []string) error {
 	if len(args) == 0 {
-		args = []string{"."}
+		args = []string{"./..."}
 	}
 	var g Deps
 	manifest := filepath.Join("vendor", "Deps.json")
