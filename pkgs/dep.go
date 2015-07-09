@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -16,7 +15,7 @@ const sep = "/" + srcdir + "/"
 
 func ListDeps(name ...string) ([]Dependency, error) {
 	deps := []Dependency{}
-	pkgs, err := LoadPackages(name...)
+	pkgs, err := loadPacks(name...)
 	if err != nil {
 		return deps, err
 	}
@@ -46,7 +45,7 @@ func ListDeps(name ...string) ([]Dependency, error) {
 		testImports = append(testImports, p.TestImports...)
 		testImports = append(testImports, p.XTestImports...)
 	}
-	ps, err := LoadPackages(testImports...)
+	ps, err := loadPacks(testImports...)
 	if err != nil {
 		return deps, err
 	}
@@ -67,7 +66,7 @@ func ListDeps(name ...string) ([]Dependency, error) {
 	}
 	sort.Strings(path)
 	path = uniq(path)
-	ps, err = LoadPackages(path...)
+	ps, err = loadPacks(path...)
 	if err != nil {
 		return deps, err
 	}
@@ -127,7 +126,7 @@ type Dependency struct {
 	Dir       string `json:"-"` // full path to package
 
 	// used by command update
-	pkg *Package
+	pkg *pack
 
 	// used by command go
 	vcs *vcs.VCS
@@ -180,7 +179,7 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 	for _, dep := range deps {
 		paths = append(paths, dep.ImportPath)
 	}
-	ps, err := LoadPackages(paths...)
+	ps, err := loadPacks(paths...)
 	if err != nil {
 		return nil, err
 	}
@@ -246,17 +245,4 @@ func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
 		return nil, err1
 	}
 	return tocopy, nil
-}
-
-func (d Dependency) Match(pat string) bool {
-	return matchPattern(pat, d.ImportPath)
-}
-
-func matchPattern(pat, name string) bool {
-	re := regexp.QuoteMeta(pat)
-	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
-	if strings.HasSuffix(re, `/.*`) {
-		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
-	}
-	return regexp.MustCompile(`^` + re).MatchString(name)
 }

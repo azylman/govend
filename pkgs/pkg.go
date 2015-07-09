@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-type Package struct {
+type pack struct {
 	Dir        string
 	Root       string
 	ImportPath string
@@ -40,10 +40,10 @@ func ImportPath(name string) (string, error) {
 	return res.ImportPath, nil
 }
 
-// LoadPackages loads the named packages using go list -json.
+// loadPacks loads the named packages using go list -json.
 // Unlike the go tool, an empty argument list is treated as
 // an empty list; "." must be given explicitly if desired.
-func LoadPackages(name ...string) (a []*Package, err error) {
+func loadPacks(name ...string) (a []*pack, err error) {
 	if len(name) == 0 {
 		return nil, nil
 	}
@@ -60,7 +60,7 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 	}
 	d := json.NewDecoder(r)
 	for {
-		info := new(Package)
+		info := new(pack)
 		err = d.Decode(info)
 		if err == io.EOF {
 			break
@@ -77,7 +77,7 @@ func LoadPackages(name ...string) (a []*Package, err error) {
 	return a, nil
 }
 
-func (p *Package) allGoFiles() (a []string) {
+func (p *pack) allGoFiles() (a []string) {
 	a = append(a, p.GoFiles...)
 	a = append(a, p.CgoFiles...)
 	a = append(a, p.TestGoFiles...)
