@@ -31,18 +31,12 @@ func save() error {
 	if err != nil {
 		return err
 	}
-	if gold.Deps == nil {
-		gold.Deps = make([]Dependency, 0) // produce json [], not null
-	}
 	gold.ImportPath = dot[0].ImportPath
 	gold.GoVersion = ver
 
 	gnew := &Deps{}
 	if gnew.Load(dot); err != nil {
 		return err
-	}
-	if gnew.Deps == nil {
-		gnew.Deps = make([]Dependency, 0) // produce json [], not null
 	}
 
 	srcdir := "vendor"
@@ -114,6 +108,9 @@ func readOldDeps() (Deps, error) {
 	defer f.Close()
 	var deps Deps
 	err = json.NewDecoder(f).Decode(&deps)
+	if deps.Deps == nil {
+		deps.Deps = []Dependency{}
+	}
 	return deps, err
 }
 

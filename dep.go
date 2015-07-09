@@ -137,6 +137,9 @@ func (g *Deps) Load(pkgs []*Package) error {
 			vcs:        vcs,
 		})
 	}
+	if g.Deps == nil {
+		g.Deps = []Dependency{}
+	}
 	return err1
 }
 
