@@ -6,8 +6,6 @@ This tool assumes you are working in a standard Go workspace,
 as described in http://golang.org/doc/code.html. We require Go 1.5
 or newer to build govend itself, and you can only use it with go 1.5 and newer.
 
-**NOTE**: This is currently a forked, heavily stripped down version of https://github.com/tools/godep.
-
 ### Install
 
 	$ go get github.com/azylman/govend
@@ -16,8 +14,8 @@ or newer to build govend itself, and you can only use it with go 1.5 and newer.
 
 How to add govend in a new project.
 
-Assuming you've got everything working already, so you can
-build your project with `go install` and test it with `go test`,
+Assuming you've got everything working already (i.e. you can
+build your project with `go install` and test it with `go test`),
 it's one command to start using:
 
 	$ govend
@@ -40,8 +38,11 @@ To add a new package foo/bar, do this:
 To update a package from your `$GOPATH`, do this:
 
 1. Run `go get -u foo/bar`
-2. Run `govend -u foo/bar`. (You can use the `...` wildcard,
-for example `govend -u foo/...`).
+2. Run `govend -u foo/bar`.
+
+You can use the `...` wildcard, for example `govend -u foo/...`.
+You can also use `./...` to update everything, `govend -u ./...`.
+This is the default if no arguments are provided.
 
 ### File Format
 

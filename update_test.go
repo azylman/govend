@@ -60,7 +60,7 @@ func TestUpdate(t *testing.T) {
 			},
 		},
 		{
-			desc: "update one dependency, keep other one, no rewrite",
+			desc: "update one dependency, keep other one",
 			cwd:  "C",
 			args: []string{"D"},
 			start: []*node{
@@ -112,6 +112,55 @@ func TestUpdate(t *testing.T) {
 			desc: "update all dependencies",
 			cwd:  "C",
 			args: []string{"..."},
+			start: []*node{
+				{
+					"D",
+					"",
+					[]*node{
+						{"main.go", pkg("D") + decl("D1"), nil},
+						{"+git", "D1", nil},
+						{"main.go", pkg("D") + decl("D2"), nil},
+						{"+git", "D2", nil},
+					},
+				},
+				{
+					"E",
+					"",
+					[]*node{
+						{"main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "E1", nil},
+						{"main.go", pkg("E") + decl("E2"), nil},
+						{"+git", "E2", nil},
+					},
+				},
+				{
+					"C",
+					"",
+					[]*node{
+						{"main.go", pkg("main", "D", "E"), nil},
+						{"vendor/Deps.json", deps("C", "D", "D1", "E", "E1"), nil},
+						{"vendor/D/main.go", pkg("D") + decl("D1"), nil},
+						{"vendor/E/main.go", pkg("E") + decl("E1"), nil},
+						{"+git", "", nil},
+					},
+				},
+			},
+			want: []*node{
+				{"C/vendor/D/main.go", pkg("D") + decl("D2"), nil},
+				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
+			},
+			wdep: Manifest{
+				ImportPath: "C",
+				Deps: []pkgs.Dependency{
+					{ImportPath: "D", Comment: "D2"},
+					{ImportPath: "E", Comment: "E2"},
+				},
+			},
+		},
+		{
+			desc: "update all dependencies",
+			cwd:  "C",
+			args: []string{"./..."},
 			start: []*node{
 				{
 					"D",
