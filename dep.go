@@ -151,25 +151,6 @@ func ReadDeps(path string, g *Deps) error {
 	return json.NewDecoder(f).Decode(g)
 }
 
-func copyDeps(g *Deps) *Deps {
-	h := *g
-	h.Deps = make([]Dependency, len(g.Deps))
-	copy(h.Deps, g.Deps)
-	return &h
-}
-
-func eqDeps(a, b []Dependency) bool {
-	ok := true
-	for _, da := range a {
-		for _, db := range b {
-			if da.ImportPath == db.ImportPath && da.Rev != db.Rev {
-				ok = false
-			}
-		}
-	}
-	return ok
-}
-
 func ReadAndLoadDeps(path string) (*Deps, error) {
 	g := new(Deps)
 	err := ReadDeps(path, g)
