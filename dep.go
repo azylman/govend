@@ -13,7 +13,8 @@ import (
 	"strings"
 )
 
-const sep = "/vendor/"
+const srcdir = "vendor"
+const sep = "/" + srcdir + "/"
 
 // Deps describes what a package needs to be rebuilt reproducibly.
 // It's the same information stored in file Deps.

@@ -14,7 +14,7 @@ func update(args []string) error {
 		args = []string{"./..."}
 	}
 	var g Deps
-	manifest := filepath.Join("vendor", "Deps.json")
+	manifest := filepath.Join(srcdir, "Deps.json")
 	if err := ReadDeps(manifest, &g); err != nil {
 		return err
 	}
@@ -43,8 +43,7 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
-	srcdir := filepath.FromSlash("vendor")
-	return copySrc(srcdir, deps)
+	return copySrc(filepath.FromSlash(srcdir), deps)
 }
 
 // markMatches marks each entry in deps with an import path that

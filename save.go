@@ -39,7 +39,6 @@ func save() error {
 		return err
 	}
 
-	srcdir := "vendor"
 	rem := subDeps(gold.Deps, gnew.Deps)
 	add := subDeps(gnew.Deps, gold.Deps)
 	gold.Deps = subDeps(gold.Deps, rem)
@@ -48,11 +47,11 @@ func save() error {
 		return err
 	}
 
-	readme := filepath.Join("vendor", "README")
+	readme := filepath.Join(srcdir, "README")
 	if writeFile(readme, strings.TrimSpace(Readme)+"\n"); err != nil {
 		log.Println(err)
 	}
-	f, err := os.Create(filepath.Join("vendor", "Deps.json"))
+	f, err := os.Create(filepath.Join(srcdir, "Deps.json"))
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func checkForConflicts(deps []Dependency) error {
 }
 
 func readOldDeps() (Deps, error) {
-	f, err := os.Open(filepath.Join("vendor", "Deps.json"))
+	f, err := os.Open(filepath.Join(srcdir, "Deps.json"))
 	if os.IsNotExist(err) {
 		return Deps{}, nil
 	}
