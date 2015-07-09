@@ -1,14 +1,10 @@
-package main
+package pkgs
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"log"
-	"os"
-	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -18,36 +14,12 @@ import (
 const srcdir = "vendor"
 const sep = "/" + srcdir + "/"
 
-// Manifest describes what a package needs to be rebuilt reproducibly.
-// It's the same information stored in file Deps.
-type Manifest struct {
-	ImportPath string
-	GoVersion  string
-	Packages   []string `json:",omitempty"` // Arguments to save, if any.
-	Deps       []Dependency
-}
-
-// A Dependency is a specific revision of a package.
-type Dependency struct {
-	ImportPath string
-	Comment    string `json:",omitempty"` // Description of commit, if present.
-	Rev        string // VCS-specific commit ID.
-
-	// used by command save & update
-	ws   string // workspace
-	root string // import path to repo root
-	dir  string // full path to package
-
-	// used by command update
-	matched bool // selected for update by command line
-	pkg     *Package
-
-	// used by command go
-	vcs *vcs.VCS
-}
-
-// pkgs is the list of packages to read dependencies
-func (g *Manifest) Load(pkgs []*Package) error {
+func ListDeps(name ...string) ([]Dependency, error) {
+	deps := []Dependency{}
+	pkgs, err := LoadPackages(name...)
+	if err != nil {
+		return deps, err
+	}
 	var err1 error
 	var path, seen []string
 	for _, p := range pkgs {
@@ -76,7 +48,7 @@ func (g *Manifest) Load(pkgs []*Package) error {
 	}
 	ps, err := LoadPackages(testImports...)
 	if err != nil {
-		return err
+		return deps, err
 	}
 	for _, p := range ps {
 		if p.Standard {
@@ -97,7 +69,7 @@ func (g *Manifest) Load(pkgs []*Package) error {
 	path = uniq(path)
 	ps, err = LoadPackages(path...)
 	if err != nil {
-		return err
+		return deps, err
 	}
 	for _, pkg := range ps {
 		if pkg.Error.Err != "" {
@@ -130,54 +102,35 @@ func (g *Manifest) Load(pkgs []*Package) error {
 			continue
 		}
 		comment := vcs.Describe(pkg.Dir, id)
-		g.Deps = append(g.Deps, Dependency{
+		deps = append(deps, Dependency{
 			ImportPath: pkg.ImportPath,
 			Rev:        id,
 			Comment:    comment,
-			dir:        pkg.Dir,
-			ws:         pkg.Root,
-			root:       filepath.ToSlash(reporoot),
+			Dir:        pkg.Dir,
+			Workspace:  pkg.Root,
+			Root:       filepath.ToSlash(reporoot),
 			vcs:        vcs,
 		})
 	}
-	if g.Deps == nil {
-		g.Deps = []Dependency{}
-	}
-	return err1
+	return deps, err1
 }
 
-func ReadManifest(path string, g *Manifest) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	return json.NewDecoder(f).Decode(g)
-}
+// A Dependency is a specific revision of a package.
+type Dependency struct {
+	ImportPath string
+	Comment    string `json:",omitempty"` // Description of commit, if present.
+	Rev        string // VCS-specific commit ID.
 
-func ReadAndLoadManifest(path string) (*Manifest, error) {
-	g := new(Manifest)
-	err := ReadManifest(path, g)
-	if err != nil {
-		return nil, err
-	}
+	// used by command save & update
+	Workspace string `json:"-"` // workspace
+	Root      string `json:"-"` // import path to repo root
+	Dir       string `json:"-"` // full path to package
 
-	for i := range g.Deps {
-		d := &g.Deps[i]
-		d.vcs, err = vcs.FromImportPath(d.ImportPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return g, nil
-}
+	// used by command update
+	pkg *Package
 
-func (g *Manifest) WriteTo(w io.Writer) (int64, error) {
-	b, err := json.MarshalIndent(g, "", "\t")
-	if err != nil {
-		return 0, err
-	}
-	n, err := w.Write(append(b, '\n'))
-	return int64(n), err
+	// used by command go
+	vcs *vcs.VCS
 }
 
 // containsPathPrefix returns whether any string in a
@@ -206,24 +159,6 @@ func uniq(a []string) []string {
 	return a[:i]
 }
 
-// goVersion returns the version string of the Go compiler
-// currently installed, e.g. "go1.1rc3".
-func goVersion() (string, error) {
-	// govend might have been compiled with a different
-	// version, so we can't just use runtime.Version here.
-	cmd := exec.Command("go", "version")
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	p := strings.Split(string(out), " ")
-	if len(p) < 3 {
-		return "", fmt.Errorf("Error splitting output of `go version`: Expected 3 or more elements, but there are < 3: %q", string(out))
-	}
-	return p[2], nil
-}
-
 // unqualify returns the part of importPath after the last
 // occurrence of the signature path elements
 // (vendor) that always precede imported
@@ -237,4 +172,91 @@ func unqualify(importPath string) string {
 		importPath = importPath[i+len(sep):]
 	}
 	return importPath
+}
+
+func LoadVCSAndUpdate(deps []Dependency) ([]Dependency, error) {
+	var err1 error
+	var paths []string
+	for _, dep := range deps {
+		paths = append(paths, dep.ImportPath)
+	}
+	ps, err := LoadPackages(paths...)
+	if err != nil {
+		return nil, err
+	}
+	noupdate := make(map[string]bool) // repo roots
+	var candidates []Dependency
+	var tocopy []Dependency
+	for i := range deps {
+		dep := deps[i]
+		for _, pkg := range ps {
+			if dep.ImportPath == pkg.ImportPath {
+				dep.pkg = pkg
+				break
+			}
+		}
+		if dep.pkg == nil {
+			log.Println(dep.ImportPath + ": error listing package")
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		if dep.pkg.Error.Err != "" {
+			log.Println(dep.pkg.Error.Err)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		vcs, reporoot, err := vcs.FromDir(dep.pkg.Dir, filepath.Join(dep.pkg.Root, "src"))
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		dep.Dir = dep.pkg.Dir
+		dep.Workspace = dep.pkg.Root
+		dep.Root = filepath.ToSlash(reporoot)
+		dep.vcs = vcs
+		candidates = append(candidates, dep)
+	}
+	if err1 != nil {
+		return nil, err1
+	}
+
+	for _, dep := range candidates {
+		dep.Dir = dep.pkg.Dir
+		dep.Workspace = dep.pkg.Root
+		if noupdate[dep.Root] {
+			continue
+		}
+		id, err := dep.vcs.Identify(dep.pkg.Dir)
+		if err != nil {
+			log.Println(err)
+			err1 = errors.New("error loading dependencies")
+			continue
+		}
+		if dep.vcs.IsDirty(dep.pkg.Dir, id) {
+			log.Println("dirty working tree:", dep.pkg.Dir)
+			err1 = errors.New("error loading dependencies")
+			break
+		}
+		dep.Rev = id
+		dep.Comment = dep.vcs.Describe(dep.pkg.Dir, id)
+		tocopy = append(tocopy, dep)
+	}
+	if err1 != nil {
+		return nil, err1
+	}
+	return tocopy, nil
+}
+
+func (d Dependency) Match(pat string) bool {
+	return matchPattern(pat, d.ImportPath)
+}
+
+func matchPattern(pat, name string) bool {
+	re := regexp.QuoteMeta(pat)
+	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
+	if strings.HasSuffix(re, `/.*`) {
+		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
+	}
+	return regexp.MustCompile(`^` + re).MatchString(name)
 }

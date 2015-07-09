@@ -12,6 +12,7 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/azylman/govend/pkgs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +54,7 @@ func deps(importpath string, keyval ...string) *Manifest {
 		ImportPath: importpath,
 	}
 	for i := 0; i < len(keyval); i += 2 {
-		g.Deps = append(g.Deps, Dependency{
+		g.Deps = append(g.Deps, pkgs.Dependency{
 			ImportPath: keyval[i],
 			Comment:    keyval[i+1],
 		})
@@ -98,7 +99,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -130,7 +131,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -157,7 +158,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "P",
-				Deps:       []Dependency{},
+				Deps:       []pkgs.Dependency{},
 			},
 		},
 		{
@@ -181,7 +182,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "P",
-				Deps:       []Dependency{},
+				Deps:       []pkgs.Dependency{},
 			},
 		},
 		{
@@ -220,7 +221,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 					{ImportPath: "T", Comment: "T1"},
 				},
@@ -255,7 +256,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -289,7 +290,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/P", Comment: "D1"},
 					{ImportPath: "D/Q", Comment: "D1"},
 				},
@@ -323,7 +324,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -368,7 +369,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 					{ImportPath: "E", Comment: "E1"},
 				},
@@ -414,7 +415,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -449,7 +450,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
 					{ImportPath: "D/B", Comment: "D1"},
 				},
@@ -487,7 +488,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
 				},
 			},
@@ -523,7 +524,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
@@ -560,7 +561,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D2"},
 				},
 			},
@@ -596,7 +597,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
 				},
 			},
@@ -633,7 +634,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/A", Comment: "D2"},
 				},
 			},
@@ -672,7 +673,7 @@ func TestSave(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D/A", Comment: "D1"},
 					{ImportPath: "D/B", Comment: "D1"},
 				},

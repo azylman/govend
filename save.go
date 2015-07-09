@@ -5,23 +5,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/azylman/govend/pkgs"
 	"github.com/kr/fs"
 )
 
 func save() error {
-	dot, err := LoadPackages("./...")
-	if err != nil {
-		return err
-	}
-
 	ver, err := goVersion()
 	if err != nil {
 		return err
@@ -31,16 +29,20 @@ func save() error {
 	if err != nil {
 		return err
 	}
-	manifest.ImportPath = dot[0].ImportPath
+	path, err := pkgs.ImportPath(".")
+	if err != nil {
+		return err
+	}
+	manifest.ImportPath = path
 	manifest.GoVersion = ver
 
-	deps := &Manifest{}
-	if deps.Load(dot); err != nil {
+	deps, err := pkgs.ListDeps("./...")
+	if err != nil {
 		return err
 	}
 
-	rem := subDeps(manifest.Deps, deps.Deps)
-	add := subDeps(deps.Deps, manifest.Deps)
+	rem := subDeps(manifest.Deps, deps)
+	add := subDeps(deps, manifest.Deps)
 	manifest.Deps = subDeps(manifest.Deps, rem)
 	manifest.Deps = append(manifest.Deps, add...)
 	if err := checkForConflicts(manifest.Deps); err != nil {
@@ -76,7 +78,7 @@ func (v *revError) Error() string {
 	return v.ImportPath + ": revision is " + v.HaveRev + ", want " + v.WantRev
 }
 
-func checkForConflicts(deps []Dependency) error {
+func checkForConflicts(deps []pkgs.Dependency) error {
 	// We can't handle mismatched versions for packages in
 	// the same repo, so report that as an error.
 	for _, da := range deps {
@@ -86,7 +88,7 @@ func checkForConflicts(deps []Dependency) error {
 				if da.Rev != db.Rev {
 					return &revError{db.ImportPath, db.Rev, da.Rev}
 				}
-			case strings.HasPrefix(da.ImportPath, db.root+"/"):
+			case strings.HasPrefix(da.ImportPath, db.Root+"/"):
 				if da.Rev != db.Rev {
 					return &revError{db.ImportPath, db.Rev, da.Rev}
 				}
@@ -108,14 +110,14 @@ func readCurManifest() (Manifest, error) {
 	var man Manifest
 	err = json.NewDecoder(f).Decode(&man)
 	if man.Deps == nil {
-		man.Deps = []Dependency{}
+		man.Deps = []pkgs.Dependency{}
 	}
 	return man, err
 }
 
 // subDeps returns a - b, using ImportPath for equality.
-func subDeps(a, b []Dependency) (diff []Dependency) {
-	diff = []Dependency{}
+func subDeps(a, b []pkgs.Dependency) (diff []pkgs.Dependency) {
+	diff = []pkgs.Dependency{}
 Diff:
 	for _, da := range a {
 		for _, db := range b {
@@ -128,7 +130,7 @@ Diff:
 	return diff
 }
 
-func removeSrc(srcdir string, deps []Dependency) error {
+func removeSrc(srcdir string, deps []pkgs.Dependency) error {
 	for _, dep := range deps {
 		path := filepath.FromSlash(dep.ImportPath)
 		err := os.RemoveAll(filepath.Join(srcdir, path))
@@ -139,11 +141,11 @@ func removeSrc(srcdir string, deps []Dependency) error {
 	return nil
 }
 
-func copySrc(dir string, deps []Dependency) error {
+func copySrc(dir string, deps []pkgs.Dependency) error {
 	ok := true
 	for _, dep := range deps {
-		srcdir := filepath.Join(dep.ws, "src")
-		rel, err := filepath.Rel(srcdir, dep.dir)
+		srcdir := filepath.Join(dep.Workspace, "src")
+		rel, err := filepath.Rel(srcdir, dep.Dir)
 		if err != nil { // this should never happen
 			return err
 		}
@@ -153,7 +155,7 @@ func copySrc(dir string, deps []Dependency) error {
 			log.Println(err)
 			ok = false
 		}
-		w := fs.Walk(dep.dir)
+		w := fs.Walk(dep.Dir)
 		for w.Step() {
 			err = copyPkgFile(dir, srcdir, w)
 			if err != nil {
@@ -315,3 +317,21 @@ Please do not edit.
 See https://github.com/azylman/govend for more information.
 `
 )
+
+// goVersion returns the version string of the Go compiler
+// currently installed, e.g. "go1.1rc3".
+func goVersion() (string, error) {
+	// govend might have been compiled with a different
+	// version, so we can't just use runtime.Version here.
+	cmd := exec.Command("go", "version")
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	p := strings.Split(string(out), " ")
+	if len(p) < 3 {
+		return "", fmt.Errorf("Error splitting output of `go version`: Expected 3 or more elements, but there are < 3: %q", string(out))
+	}
+	return p[2], nil
+}

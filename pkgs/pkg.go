@@ -1,4 +1,4 @@
-package main
+package pkgs
 
 import (
 	"encoding/json"
@@ -26,6 +26,18 @@ type Package struct {
 	Error struct {
 		Err string
 	}
+}
+
+func ImportPath(name string) (string, error) {
+	out, err := exec.Command("go", "list", "-e", "-json", name).Output()
+	if err != nil {
+		return "", err
+	}
+	var res struct{ ImportPath string }
+	if err := json.Unmarshal(out, &res); err != nil {
+		return "", err
+	}
+	return res.ImportPath, nil
 }
 
 // LoadPackages loads the named packages using go list -json.

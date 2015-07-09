@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/azylman/govend/pkgs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +54,7 @@ func TestUpdate(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D2"},
 				},
 			},
@@ -101,7 +102,7 @@ func TestUpdate(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D2"},
 					{ImportPath: "E", Comment: "E1"},
 				},
@@ -150,7 +151,7 @@ func TestUpdate(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D2"},
 					{ImportPath: "E", Comment: "E2"},
 				},
@@ -187,7 +188,7 @@ func TestUpdate(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D2"},
 				},
 			},
@@ -223,14 +224,14 @@ func TestUpdate(t *testing.T) {
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
+				Deps: []pkgs.Dependency{
 					{ImportPath: "D", Comment: "D1"},
 				},
 			},
 			werr: true,
 		},
 		{
-			desc: "update just one package of two in a repo skips it",
+			desc: "update just one package of two in a repo updates both",
 			cwd:  "C",
 			args: []string{"D/A", "E"},
 			start: []*node{
@@ -270,60 +271,18 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			want: []*node{
-				{"C/vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
-				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
+				{"C/vendor/D/A/main.go", pkg("A") + decl("D2"), nil},
+				{"C/vendor/D/B/main.go", pkg("B") + decl("D2"), nil},
 				{"C/vendor/E/main.go", pkg("E") + decl("E2"), nil},
 			},
 			wdep: Manifest{
 				ImportPath: "C",
-				Deps: []Dependency{
-					{ImportPath: "D/A", Comment: "D1"},
-					{ImportPath: "D/B", Comment: "D1"},
+				Deps: []pkgs.Dependency{
+					{ImportPath: "D/A", Comment: "D2"},
+					{ImportPath: "D/B", Comment: "D2"},
 					{ImportPath: "E", Comment: "E2"},
 				},
 			},
-		},
-		{
-			desc: "update just one package of two in a repo, none left",
-			cwd:  "C",
-			args: []string{"D/A"},
-			start: []*node{
-				{
-					"D",
-					"",
-					[]*node{
-						{"A/main.go", pkg("A") + decl("D1"), nil},
-						{"B/main.go", pkg("B") + decl("D1"), nil},
-						{"+git", "D1", nil},
-						{"A/main.go", pkg("A") + decl("D2"), nil},
-						{"B/main.go", pkg("B") + decl("D2"), nil},
-						{"+git", "D2", nil},
-					},
-				},
-				{
-					"C",
-					"",
-					[]*node{
-						{"main.go", pkg("main", "D/A", "D/B"), nil},
-						{"vendor/Deps.json", deps("C", "D/A", "D1", "D/B", "D1"), nil},
-						{"vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
-						{"vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
-						{"+git", "", nil},
-					},
-				},
-			},
-			want: []*node{
-				{"C/vendor/D/A/main.go", pkg("A") + decl("D1"), nil},
-				{"C/vendor/D/B/main.go", pkg("B") + decl("D1"), nil},
-			},
-			wdep: Manifest{
-				ImportPath: "C",
-				Deps: []Dependency{
-					{ImportPath: "D/A", Comment: "D1"},
-					{ImportPath: "D/B", Comment: "D1"},
-				},
-			},
-			werr: true,
 		},
 	}
 
@@ -334,6 +293,7 @@ func TestUpdate(t *testing.T) {
 	const scratch = "deptest"
 	defer os.RemoveAll(scratch)
 	for i, test := range cases {
+		t.Logf(test.desc)
 		gopath := filepath.Join(scratch, fmt.Sprintf("%d", i))
 		src := filepath.Join(gopath, "src")
 		makeTree(t, &node{src, "", test.start}, "")
@@ -375,6 +335,6 @@ func TestUpdate(t *testing.T) {
 		for i := range g.Deps {
 			g.Deps[i].Rev = ""
 		}
-		assert.Equal(t, g.Deps, test.wdep.Deps)
+		assert.Equal(t, test.wdep.Deps, g.Deps)
 	}
 }
