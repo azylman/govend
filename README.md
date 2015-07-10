@@ -31,16 +31,14 @@ Then commit the whole vendor directory to version control.
 
 To add a new package foo/bar, do this:
 
-1. Run `go get foo/bar`
-2. Edit your code to import foo/bar.
-3. Run `govend`.
+1. Edit your code to import foo/bar.
+2. Run `govend`.
 
 #### Update a Dependency
 
-To update a package from your `$GOPATH`, do this:
+To update a package, do this:
 
-1. Run `go get -u foo/bar`
-2. Run `govend -u foo/bar`.
+1. Run `govend -u foo/bar`.
 
 You can use the `...` wildcard, for example `govend -u foo/...`.
 You can also use `./...` to update everything, `govend -u ./...`.
